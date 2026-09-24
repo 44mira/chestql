@@ -5,7 +5,9 @@
  * Main reference: https://beej.us/guide/bgnet/html/
  */
 
+#include "db.h"
 #include <netdb.h>
+#include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,13 +19,31 @@
 #define PORT "4499" // port to be used by server
 #define BACKLOG 5   // constant for listen() queue
 
+int bind_socket(void);
+void accept_loop(sqlite3 *db, int sockfd);
+
 int main(void)
 {
-  struct sockaddr_storage client_addr;
+  int sockfd;
+  sqlite3 *db;
+
+  sockfd = bind_socket();
+
+  db = init_db();
+  printf("server: waiting for connections...\n");
+
+  accept_loop(db, sockfd);
+
+  close(sockfd);
+  sqlite3_close(db);
+
+  return 0;
+}
+
+int bind_socket()
+{
   struct addrinfo hints, *serv_info, *p;
-  int status, sockfd, client_fd; // gai status
-  ssize_t bytes_received;
-  socklen_t sin_size;
+  int status, sockfd;
 
   memset(&hints, 0, sizeof hints); // clear hints struct
   hints.ai_family = AF_UNSPEC;
@@ -58,14 +78,25 @@ int main(void)
     exit(1);
   }
 
+  return sockfd;
+}
+
+void accept_loop(sqlite3 *db, int sockfd)
+{
+  struct sockaddr_storage client_addr;
+  int client_fd;
+  ssize_t bytes_received;
+  socklen_t sin_size;
+
   if (listen(sockfd, BACKLOG) == -1) {
     perror("listen");
     exit(1);
   }
 
-  printf("server: waiting for connections...\n");
+  // TODO: parse http requests
+  // TODO: send POSTs into db
 
-  // main accept loop, clients are handled in subprocesses.
+  // main accept loop
   while (1) {
     sin_size = sizeof client_addr;
     client_fd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size);
@@ -84,7 +115,4 @@ int main(void)
     printf("%s\n", buf);
     close(client_fd);
   }
-
-  close(sockfd);
-  return 0;
 }
