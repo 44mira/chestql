@@ -10,7 +10,9 @@ project(
 )
 
 inc = include_directories('include')
-src = ['chestql.c']
+src = []
+
+subdir('src')
 
 # dependencies ---
 

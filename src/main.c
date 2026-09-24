@@ -21,7 +21,8 @@ int main(void)
 {
   struct sockaddr_storage client_addr;
   struct addrinfo hints, *serv_info, *p;
-  int status, sockfd, client_fd, bytes_received; // gai status
+  int status, sockfd, client_fd; // gai status
+  ssize_t bytes_received;
   socklen_t sin_size;
 
   memset(&hints, 0, sizeof hints); // clear hints struct
