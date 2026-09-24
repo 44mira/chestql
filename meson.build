@@ -4,8 +4,7 @@ project(
   default_options: {
     'default_library': 'static',
     'c_std': 'gnu99',
-    'warning_level': 'everything',
-    'werror': true,
+    'warning_level': '2',
   },
 )
 
