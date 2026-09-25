@@ -15,7 +15,10 @@ subdir('src')
 
 # dependencies ---
 
-dep_sqlite3 = dependency('sqlite3')
+sqlite3 = dependency('sqlite3')
+criterion = dependency('criterion')
+
+deps = [sqlite3, criterion]
 
 # ----------------
 
@@ -23,5 +26,5 @@ executable(
   meson.project_name(),
   sources: src,
   include_directories: inc,
-  dependencies: [dep_sqlite3],
+  dependencies: deps,
 )
