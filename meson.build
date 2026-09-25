@@ -5,6 +5,12 @@ project(
     'default_library': 'static',
     'c_std': 'gnu99',
     'warning_level': '2',
+
+    # disable subproject tests
+    'criterion:tests': false,
+    'criterion:samples': false,
+    'boxfort:tests': false,
+    'boxfort:samples': false,
   },
 )
 
@@ -16,9 +22,8 @@ subdir('src')
 # dependencies ---
 
 sqlite3 = dependency('sqlite3')
-criterion = dependency('criterion')
 
-deps = [sqlite3, criterion]
+deps = [sqlite3]
 
 # ----------------
 
@@ -28,3 +33,5 @@ executable(
   include_directories: inc,
   dependencies: deps,
 )
+
+subdir('tests')
