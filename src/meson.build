@@ -1,5 +1,6 @@
 src += files(
   'main.c',
   'db.c',
-  # 'parser.c',
+  'parser.c',
+  'arena.c',
 )
