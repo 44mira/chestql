@@ -16,7 +16,7 @@ struct chestql_row {
 };
 
 struct chestql_csv {
-  struct chestql_row *rows;
+  struct chestql_row **rows;
   uint64_t row_count;
 };
 

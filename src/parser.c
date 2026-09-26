@@ -126,8 +126,65 @@ int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
 int deserialize_csv(struct arena *allocator, struct chestql_csv **csv,
                     const char *content, uint64_t contentlen)
 {
-  // TODO:
-  return -1;
+  uint64_t row_count = 0, bp = 0;
+  uint64_t allocated_bytes = 0;
+  *csv = (struct chestql_csv *)arena_alloc(allocator, sizeof **csv);
+  if (*csv == NULL) {
+    return -1;
+  }
+  allocated_bytes += sizeof(**csv);
+
+  // First Pass: count the rows
+
+  for (uint64_t i = 0; i < contentlen; i++) {
+    if (content[i] == '\n') {
+      row_count++;
+    }
+  }
+
+  // account for the last row if it doesn't end in newline
+  if (content[contentlen] != '\n')
+    row_count++;
+
+  (*csv)->row_count = row_count;
+  (*csv)->rows = (struct chestql_row **)arena_alloc(
+      allocator, sizeof *(*csv)->rows * row_count);
+  allocated_bytes += sizeof *(*csv)->rows * row_count;
+
+  // Second pass: parse the rows
+
+  // we allocate outside of the arena because this tmp does not
+  // share lifetime with them. malloc() should be ok here since
+  // the free() is pretty obvious (within the same scope).
+  char *tmp = (char *)malloc(sizeof *tmp * (contentlen + 1));
+  uint64_t row_idx = 0;
+  for (uint64_t i = 0; i < contentlen + 1; i++) {
+    if (content[i] == '\n' || i == contentlen) {
+      tmp[i] = '\0';
+
+      struct chestql_row *r = NULL;
+      if (deserialize_csv_row(allocator, &r, tmp + bp) != 0) {
+        if (arena_pop(allocator, allocated_bytes) != 0) {
+          fprintf(stderr, "allocator: deallocation error");
+          exit(1);
+        }
+
+        free(tmp);
+        return -1;
+      }
+
+      (*csv)->rows[row_idx] = r;
+      row_idx++;
+      bp = i + 1; // move start of next string after this index
+
+      continue;
+    }
+
+    tmp[i] = content[i];
+  }
+  free(tmp);
+
+  return 0;
 }
 
 int parse_http_request(struct arena *allocator, const char *buf, uint64_t bytes,
