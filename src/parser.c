@@ -51,6 +51,16 @@ int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
 
   char tmp[TMPBUFSIZ] = {0}; // same as memset 0 with static arrays
 
+  /*
+   * Parse CSV --------------------------------------------------------
+   * Can probably shorten this with a for loop and some flags,
+   * but this works and is just pedantic enough to be readable
+   * so i'll keep it this way until something about it really bothers me
+   *
+   * Copy characters over a continuous buffer, separating entries with
+   * null terminators and accessing them with pointer arithmetic (bp and i).
+   */
+
   // read for slot
   while (content[i] != ',') {
     if (content[i] == '\0') {
