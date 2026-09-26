@@ -41,6 +41,16 @@ void *arena_alloc(struct arena *allocator, uint64_t bytes)
   return allocator->mem + alloc_pos;
 }
 
+int arena_pop(struct arena *allocator, uint64_t bytes)
+{
+  if (bytes > allocator->pos) {
+    return -1;
+  }
+
+  allocator->pos -= bytes;
+  return 0;
+}
+
 void arena_free(struct arena *allocator)
 {
   free(allocator->mem);

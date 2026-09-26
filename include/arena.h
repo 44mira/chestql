@@ -27,6 +27,17 @@ struct arena *arena_make(uint64_t size);
 void *arena_alloc(struct arena *allocator, uint64_t bytes);
 
 /**
+ * Deallocate a specified amount of bytes from the top of an arena. Will corrupt
+ * data if popped across boundaries.
+ *
+ * @param allocator the arena used for deallocation
+ * @param bytes the number of bytes to pop from the arena
+ * @return 0 if successful, -1 if not (attempting to deallocate past arena
+ * bounds)
+ */
+int arena_pop(struct arena *allocator, uint64_t bytes);
+
+/**
  * Frees an arena.
  *
  * @param allocator The arena to be freed.
