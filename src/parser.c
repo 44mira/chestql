@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define TMPBUFSIZ 1024
+
 string *to_string(struct arena *allocator, const char *content,
                   uint64_t contentlen)
 {
@@ -14,7 +16,7 @@ string *to_string(struct arena *allocator, const char *content,
   }
 
   // +1 for the null terminator
-  res->value = (char *)arena_alloc(allocator, contentlen+1);
+  res->value = (char *)arena_alloc(allocator, contentlen + 1);
 
   // when we can't allocate for the value, deallocate the string struct first
   // before returning NULL to avoid memory leak (though that would be the least
@@ -39,8 +41,78 @@ string *to_string(struct arena *allocator, const char *content,
 int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
                         const char *content)
 {
-  // TODO:
-  return -1;
+  uint64_t bp, i = 0;
+
+  // allocate for the row struct
+  *row = (struct chestql_row *)arena_alloc(allocator, sizeof **row);
+  if (*row == NULL) {
+    return -1;
+  }
+
+  char tmp[TMPBUFSIZ] = {0}; // same as memset 0 with static arrays
+
+  // read for slot
+  while (content[i] != ',') {
+    if (content[i] == '\0') {
+      if (arena_pop(allocator, sizeof **row) == -1) {
+        fprintf(stderr, "allocator: deallocation error");
+        exit(1);
+      }
+      return -1;
+    }
+
+    tmp[i] = content[i];
+    i++;
+  }
+
+  tmp[i] = '\0';
+
+  // we actually lose some of the numbers from using uint64 by using atoi
+  // but I don't feel like rolling up my own number parser rn
+  (*row)->slot = atoi(tmp);
+
+  i++;
+  bp = i; // set a breakpoint to indicate the start of the next string
+
+  // read for name
+  while (content[i] != ',') {
+    if (content[i] == '\0') {
+      if (arena_pop(allocator, sizeof **row) == -1) {
+        fprintf(stderr, "allocator: deallocation error");
+        exit(1);
+      }
+      return -1;
+    }
+
+    tmp[i] = content[i];
+    i++;
+  }
+
+  tmp[i] = '\0';
+  (*row)->name = to_string(allocator, tmp + bp, i - bp);
+  if ((*row)->name == NULL) {
+    if (arena_pop(allocator, sizeof **row) == -1) {
+      fprintf(stderr, "allocator: deallocation error");
+      exit(1);
+    }
+    return -1;
+  }
+
+  i++;
+  bp = i; // set a breakpoint to indicate the start of the next string
+
+  // read for count
+  while (content[i] != '\0') {
+    tmp[i] = content[i];
+    i++;
+  }
+  tmp[i] = '\0';
+
+  // we actually lose some of the numbers from using uint64 by using atoi
+  // but I don't feel like rolling up my own number parser rn
+  (*row)->count = atoi(tmp + bp);
+
+  return 0;
 }
 
 int deserialize_csv(struct arena *allocator, struct chestql_csv **csv,
