@@ -77,9 +77,7 @@ int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
 
   tmp[i] = '\0';
 
-  // we actually lose some of the numbers from using uint64 by using atoi
-  // but I don't feel like rolling up my own number parser rn
-  (*row)->slot = atoi(tmp);
+  (*row)->slot = strtoul(tmp, NULL, 10);
 
   i++;
   bp = i; // set a breakpoint to indicate the start of the next string
@@ -120,7 +118,7 @@ int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
 
   // we actually lose some of the numbers from using uint64 by using atoi
   // but I don't feel like rolling up my own number parser rn
-  (*row)->count = atoi(tmp + bp);
+  (*row)->count = strtoul(tmp + bp, NULL, 10);
 
   return 0;
 }
