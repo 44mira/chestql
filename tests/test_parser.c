@@ -1,6 +1,7 @@
 #include "arena.h"
 #include "parser.h"
 #include <criterion/criterion.h>
+#include <criterion/redirect.h>
 #include <criterion/new/assert.h>
 #include <stdint.h>
 #include <string.h>
@@ -102,4 +103,82 @@ Test(parser, deserialize_csv_valid, .init = setup, .fini = teardown)
   cr_assert(row->count == 64, expect_msg("%ld"), 64, row->count);
   cr_assert(eq(str, row->name->value, "minecraft:copper_ingot"),
             expect_msg("%s"), "minecraft:copper_ingot", row->name->value);
+}
+
+Test(parser, parse_http_request_valid, .init = setup, .fini = teardown)
+{
+  struct chestql_csv *c;
+  struct chestql_row *row;
+  int retcode;
+  const char *content = "POST / HTTP/1.1\n"
+                        "Content-Type: text/csv\n"
+                        "user-agent: computercraft/1.120.2\n"
+                        "content-length: 68\n"
+                        "accept-charset: UTF-8\n"
+                        "host: localhost:4499\n"
+                        "connection: close\r\n"
+                        "\r\n"
+                        "1,minecraft:stone,24\n"
+                        "2,minecraft:boat,1\n"
+                        "4,minecraft:copper_ingot,64\n";
+
+  retcode = parse_http_request(allocator, content, strlen(content) + 1, &c);
+  cr_assert(retcode == 0, "Parse HTTP request should have retcode 0");
+
+  cr_assert(c->row_count == 3, expect_msg("%ld"), 3, c->row_count);
+
+  row = c->rows[0];
+  cr_assert(row->slot == 1, expect_msg("%ld"), 1, row->slot);
+  cr_assert(row->count == 24, expect_msg("%ld"), 24, row->count);
+  cr_assert(eq(str, row->name->value, "minecraft:stone"), expect_msg("%s"),
+            "minecraft:stone", row->name->value);
+
+  row = c->rows[1];
+  cr_assert(row->slot == 2, expect_msg("%ld"), 2, row->slot);
+  cr_assert(row->count == 1, expect_msg("%ld"), 1, row->count);
+  cr_assert(eq(str, row->name->value, "minecraft:boat"), expect_msg("%s"),
+            "minecraft:boat", row->name->value);
+
+  row = c->rows[2];
+  cr_assert(row->slot == 4, expect_msg("%ld"), 4, row->slot);
+  cr_assert(row->count == 64, expect_msg("%ld"), 64, row->count);
+  cr_assert(eq(str, row->name->value, "minecraft:copper_ingot"),
+            expect_msg("%s"), "minecraft:copper_ingot", row->name->value);
+}
+
+Test(parser, parse_http_request_invalid, .init = setup, .fini = teardown)
+{
+  cr_redirect_stderr();
+
+  struct chestql_csv *c;
+  int retcode;
+  const char *content = "POST / HTTP/1.1\n"
+                        "Content-Type: application/json\n"
+                        "user-agent: computercraft/1.120.2\n"
+                        "content-length: 68\n"
+                        "accept-charset: UTF-8\n"
+                        "host: localhost:4499\n"
+                        "connection: close\r\n"
+                        "\r\n"
+                        "1,minecraft:stone,24\n"
+                        "2,minecraft:boat,1\n"
+                        "4,minecraft:copper_ingot,64\n";
+
+  retcode = parse_http_request(allocator, content, strlen(content) + 1, &c);
+  cr_assert(retcode == -1, "Invalid Parse HTTP request should have retcode -1");
+
+  const char *content2 = "POST / HTTP/1.1\n"
+                         "Content-Type: text/csv\n"
+                         "user-agent: computercraft/1.120.2\n"
+                         "content-length: 414\n"
+                         "accept-charset: UTF-8\n"
+                         "host: localhost:4499\n"
+                         "connection: close\r\n"
+                         "\r\n"
+                         "1minecraft:stone24\n"
+                         "2,minecraft:boat,1\n"
+                         "4,minecraft:copper_ingot,64\n";
+
+  retcode = parse_http_request(allocator, content2, strlen(content2) + 1, &c);
+  cr_assert(retcode == -1, "Invalid Parse HTTP request should have retcode -1");
 }

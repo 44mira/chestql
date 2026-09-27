@@ -4,6 +4,8 @@
 #include "arena.h"
 #include <stdint.h>
 
+enum MOVEEOL { EOL_NEWLN = 1, EOL_EOF };
+
 typedef struct {
   char *value;
   uint64_t length;
@@ -58,6 +60,24 @@ int deserialize_csv_row(struct arena *allocator, struct chestql_row **row,
  */
 int deserialize_csv(struct arena *allocator, struct chestql_csv **csv,
                     const char *content, uint64_t contentlen);
+
+/**
+ * Move a character pointer to the nearest newline or EOF
+ *
+ * @param ptr pointer to be moved
+ * @return EOL_NEWLN on newline, EOL_EOF on EOF
+ */
+enum MOVEEOL move_to_eol(const char **ptr);
+
+/**
+ * Parses HTTP header and checks for Content-Type and Content-Length. It stores
+ * the retrieved value in either of the two out-parameters.
+ *
+ * @param ptr pointer to the start of the HTTP header
+ * @param is_type_csv out parameter for Content-Type, true or false
+ * @param contentlen out parameter for Content-Length
+ */
+void parse_http_header(const char *ptr, int *is_type_csv, uint64_t *contenlen);
 
 /**
  * Parses an HTTP request, expecting a `text/csv` that matches the spec.
