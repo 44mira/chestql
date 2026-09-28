@@ -2,6 +2,7 @@ build/
 subprojects/*
 src/test*
 chestql_db
-!subprojects/sqlite3.wrap
 !subprojects/criterion.wrap
+!subprojects/sqlite3.wrap
 !subprojects/wrap.lock
+chestql.lua
