@@ -1,5 +1,6 @@
 build/
 subprojects/*
 src/test*
+chestql_db
 !subprojects/*.wrap
 !subprojects/wrap.lock
