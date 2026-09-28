@@ -5,7 +5,9 @@
  * Main reference: https://beej.us/guide/bgnet/html/
  */
 
+#include "arena.h"
 #include "db.h"
+#include "parser.h"
 #include <netdb.h>
 #include <sqlite3.h>
 #include <stdio.h>
@@ -21,21 +23,21 @@
 
 int bind_socket(void);
 void accept_loop(sqlite3 *db, int sockfd);
+void handle_client(sqlite3 *db, int client_fd);
 
 int main(void)
 {
-  int sockfd;
   sqlite3 *db;
+  int sockfd;
 
   sockfd = bind_socket();
 
-  db = init_db();
   printf("server: waiting for connections...\n");
 
+  db = init_db();
   accept_loop(db, sockfd);
 
   close(sockfd);
-  sqlite3_close(db);
 
   return 0;
 }
@@ -85,7 +87,6 @@ void accept_loop(sqlite3 *db, int sockfd)
 {
   struct sockaddr_storage client_addr;
   int client_fd;
-  ssize_t bytes_received;
   socklen_t sin_size;
 
   if (listen(sockfd, BACKLOG) == -1) {
@@ -105,14 +106,37 @@ void accept_loop(sqlite3 *db, int sockfd)
       continue;
     }
 
-    char buf[BUFSIZ];
+    handle_client(db, client_fd);
 
-    if ((bytes_received = recv(client_fd, buf, BUFSIZ, 0)) == -1) {
-      perror("recv");
-      exit(1);
-    }
-
-    printf("%s\n", buf);
     close(client_fd);
   }
+}
+
+void handle_client(sqlite3 *db, int client_fd)
+{
+  ssize_t bytes_received;
+  struct chestql_csv *csv = NULL;
+
+  struct arena *allocator = arena_make(DEFAULT_ARENA_SIZE);
+  char *buf =
+      (char *)malloc(DEFAULT_ARENA_SIZE); // scratch arena for big buffer
+
+  // receive http -------------------------------------------------------
+  if ((bytes_received = recv(client_fd, buf, DEFAULT_ARENA_SIZE, 0)) == -1) {
+    perror("recv");
+    arena_free(allocator);
+    free(buf);
+    exit(1);
+  }
+
+  // parse http ---------------------------------------------------------
+  if (parse_http_request(allocator, buf, bytes_received, &csv) != 0) {
+    arena_free(allocator);
+    free(buf);
+    exit(1);
+  }
+
+  // db handling ---------------------------------------------------------
+  reset_db_table(db);        // clear the db after every successful parse
+  load_csv_into_db(db, csv); // insert new rows into db
 }
