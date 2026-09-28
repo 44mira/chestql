@@ -6,12 +6,31 @@
 sqlite3 *init_db()
 {
   sqlite3 *db = NULL;
-  char *err_msg = NULL;
 
   // open the db
   if (sqlite3_open(DB_NAME, &db) != SQLITE_OK) {
     fprintf(stderr, "db open: %s\n", sqlite3_errmsg(db));
     exit(1);
+  }
+
+  printf("db: succesfully opened.\n");
+
+  return db;
+}
+
+void reset_db_table(sqlite3 *db)
+{
+  char *err_msg = NULL;
+
+  const char *conditional_drop_table_sql =
+      // sql
+      "DROP TABLE IF EXISTS inventory"
+      ";";
+  if (sqlite3_exec(db, conditional_drop_table_sql, NULL, NULL, &err_msg) !=
+      SQLITE_OK) {
+    fprintf(stderr, "db reset: %s\n", sqlite3_errmsg(db));
+    sqlite3_free(err_msg);
+    exit(1); // should probably just return this and let caller handle the error
   }
 
   const char *create_table_sql =
@@ -25,10 +44,8 @@ sqlite3 *init_db()
   if (sqlite3_exec(db, create_table_sql, NULL, NULL, &err_msg) != SQLITE_OK) {
     fprintf(stderr, "db create: %s\n", sqlite3_errmsg(db));
     sqlite3_free(err_msg);
-    exit(1);
+    exit(1); // should probably just return this and let caller handle the error
   }
-
-  printf("db: succesfully opened.\n");
-
-  return db;
 }
+
+void load_csv_into_db(sqlite3 *db, struct chestql_csv *csv) {}
