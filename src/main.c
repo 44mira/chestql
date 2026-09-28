@@ -35,9 +35,12 @@ int main(void)
   printf("server: waiting for connections...\n");
 
   db = init_db();
+  reset_db_table(db);
+
   accept_loop(db, sockfd);
 
   close(sockfd);
+  sqlite3_close(db);
 
   return 0;
 }
@@ -128,6 +131,8 @@ void handle_client(sqlite3 *db, int client_fd)
     free(buf);
     exit(1);
   }
+  buf[bytes_received] = '\0'; // null terminate message received
+  printf("%s\n", buf);
 
   // parse http ---------------------------------------------------------
   if (parse_http_request(allocator, buf, bytes_received, &csv) != 0) {
@@ -135,8 +140,13 @@ void handle_client(sqlite3 *db, int client_fd)
     free(buf);
     exit(1);
   }
+  printf("CSV parsed successfully\n");
 
   // db handling ---------------------------------------------------------
   reset_db_table(db);        // clear the db after every successful parse
+  printf("Table reset succesfully\n");
   load_csv_into_db(db, csv); // insert new rows into db
+  printf("CSV loaded succesfully\n");
+
+  free(buf);
 }
