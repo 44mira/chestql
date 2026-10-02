@@ -1,7 +1,6 @@
 #ifndef CHESTQL_DB
 #define CHESTQL_DB
 
-#include "arena.h"
 #include "parser.h"
 
 // forward declare sqlite3 struct for signatures
