@@ -97,9 +97,6 @@ void accept_loop(sqlite3 *db, int sockfd)
     exit(1);
   }
 
-  // TODO: parse http requests
-  // TODO: send POSTs into db
-
   // main accept loop
   while (1) {
     sin_size = sizeof client_addr;
